@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dein Geburtstagsgeschenk – Wähle dein Abenteuer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  /* =========================================================
+     EINSTELLUNGEN – hier anpassen (siehe auch CONFIG im Script)
+     ========================================================= */
+  :root{
+    --bg:#1b1630;
+    --bg2:#2a2150;
+    --ink:#fdf6e3;
+    --muted:#b9b0d9;
+    --kart:#e83b3b;
+    --kart-2:#ffd23f;
+    --paint:#3fbf5f;
+    --paint-2:#ff4fa3;
+    --focus:#5ee6ff;
+    --px:4px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"VT323",ui-monospace,monospace;
+    font-size:22px;
+    line-height:1.25;
+    -webkit-font-smoothing:none;
+    overflow-x:hidden;
+    background-image:
+      linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+    background-size:16px 16px;
+  }
+  /* Scanlines für den Retro-Look */
+  body::after{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:50;
+    background:repeating-linear-gradient(to bottom, rgba(0,0,0,.18) 0 2px, transparent 2px 4px);
+  }
+  .pixel{font-family:"Press Start 2P",monospace;letter-spacing:.02em}
+  main{
+    min-height:100%;
+    max-width:880px;margin:0 auto;
+    padding:28px 18px 40px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+  }
+  .screen{width:100%;display:none;flex-direction:column;align-items:center;text-align:center}
+  .screen.active{display:flex;animation:pop .35s steps(4) both}
+  @keyframes pop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+
+  /* ---------- Startscreen ---------- */
+  .badge{
+    font-size:10px;color:var(--bg);background:var(--kart-2);
+    padding:8px 10px;margin-bottom:22px;
+    box-shadow:0 var(--px) 0 #b38f12;
+  }
+  h1{
+    font-size:clamp(20px,5.6vw,38px);line-height:1.45;
+    text-shadow:4px 4px 0 var(--kart), 8px 8px 0 #000;
+    margin-bottom:18px;
+  }
+  .sub{color:var(--muted);font-size:24px;max-width:30ch;margin-bottom:34px}
+  .blink{animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  /* ---------- Pixel-Buttons ---------- */
+  .btn{
+    font-family:"Press Start 2P",monospace;font-size:13px;
+    color:var(--bg);background:var(--ink);
+    border:0;cursor:pointer;
+    padding:16px 22px;
+    box-shadow:
+      0 calc(var(--px)*-1) 0 0 var(--ink) inset,
+      0 var(--px) 0 0 #8c84ad,
+      var(--px) 0 0 0 #000, calc(var(--px)*-1) 0 0 0 #000,
+      0 calc(var(--px)*2) 0 0 #000, 0 calc(var(--px)*-1) 0 0 #000;
+    transition:transform .08s steps(2);
+    text-decoration:none;display:inline-flex;align-items:center;gap:10px;justify-content:center;
+    min-height:52px;
+  }
+  .btn:hover{transform:translateY(-2px)}
+  .btn:active{transform:translateY(2px)}
+  .btn:focus-visible{outline:4px solid var(--focus);outline-offset:6px}
+  .btn[disabled]{opacity:.35;cursor:not-allowed;transform:none}
+  .btn.ghost{background:transparent;color:var(--muted);box-shadow:none;text-decoration:underline;text-underline-offset:6px;font-size:11px}
+  .btn.wa{background:#3fd27a}
+  .btn.mail{background:var(--kart-2)}
+
+  /* ---------- Auswahl ---------- */
+  h2{font-size:clamp(14px,3.6vw,22px);line-height:1.6;margin-bottom:8px}
+  .hint{color:var(--muted);margin-bottom:26px}
+  .vs-wrap{
+    width:100%;display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:stretch;margin-bottom:28px;
+  }
+  .vs{
+    align-self:center;font-family:"Press Start 2P";font-size:18px;color:var(--kart-2);
+    text-shadow:3px 3px 0 #000;
+  }
+  .card{
+    position:relative;overflow:hidden;
+    border:0;cursor:pointer;color:var(--ink);text-align:center;
+    padding:22px 14px 20px;
+    display:flex;flex-direction:column;align-items:center;gap:12px;
+    font-family:inherit;font-size:20px;
+    box-shadow:
+      0 0 0 var(--px) #000,
+      0 0 0 calc(var(--px)*2) var(--frame,#fff),
+      0 0 0 calc(var(--px)*3) #000;
+    margin:12px;
+    transition:transform .1s steps(2);
+  }
+  .card.kart{background:linear-gradient(#c62f2f,#8e1f2a);--frame:var(--kart-2)}
+  .card.paint{background:linear-gradient(#2f9a4c,#1d5e33);--frame:var(--paint-2)}
+  .card:hover{transform:translateY(-4px)}
+  .card:focus-visible{outline:4px dashed var(--focus);outline-offset:18px}
+  .card[aria-checked="true"]{
+    transform:translateY(-6px) scale(1.03);
+    box-shadow:
+      0 0 0 var(--px) #000,
+      0 0 0 calc(var(--px)*2) var(--focus),
+      0 0 0 calc(var(--px)*3) #000,
+      0 0 28px 8px rgba(94,230,255,.45);
+  }
+  .card[aria-checked="false"].dim{filter:grayscale(.75) brightness(.7)}
+  .card .title{font-family:"Press Start 2P";font-size:clamp(11px,2.6vw,15px);line-height:1.5}
+  .card .desc{color:#ffeedd;font-size:20px;max-width:22ch}
+  .card .stats{width:100%;max-width:220px;display:grid;gap:6px;margin-top:4px;text-align:left;font-size:18px}
+  .bar{display:flex;align-items:center;gap:8px}
+  .bar span{width:76px;flex:none}
+  .bar i{display:flex;gap:3px}
+  .bar b{width:10px;height:10px;background:rgba(0,0,0,.35)}
+  .bar b.on{background:var(--ink)}
+  .p1{
+    position:absolute;top:10px;left:10px;font-family:"Press Start 2P";font-size:9px;
+    background:var(--focus);color:#000;padding:5px 6px;display:none;
+  }
+  .card[aria-checked="true"] .p1{display:block;animation:blink 0.8s steps(1) infinite}
+  .checker{
+    position:absolute;left:0;right:0;bottom:0;height:12px;
+    background:conic-gradient(#000 25%,#fff 0 50%,#000 0 75%,#fff 0) 0 0/12px 12px;
+    opacity:.85;
+  }
+  .splat{position:absolute;width:var(--s);height:var(--s);background:var(--c);
+    clip-path:polygon(30% 0,70% 0,70% 20%,100% 20%,100% 60%,80% 60%,80% 100%,40% 100%,40% 80%,0 80%,0 30%,30% 30%);
+    opacity:.9}
+  svg.sprite{image-rendering:pixelated;filter:drop-shadow(4px 4px 0 rgba(0,0,0,.55));position:relative;z-index:1}
+  .card.kart svg.sprite{animation:drive 0.6s steps(2) infinite}
+  @keyframes drive{50%{transform:translateY(-3px)}}
+
+  /* ---------- Ergebnis ---------- */
+  .result-box{
+    width:100%;max-width:560px;background:var(--bg2);
+    padding:28px 20px 24px;margin:14px 0 24px;
+    box-shadow:0 0 0 var(--px) #000,0 0 0 calc(var(--px)*2) var(--kart-2),0 0 0 calc(var(--px)*3) #000;
+    display:flex;flex-direction:column;align-items:center;gap:14px;
+  }
+  .winner{font-size:clamp(16px,4.4vw,26px);line-height:1.5}
+  .winner.kart{color:var(--kart-2);text-shadow:3px 3px 0 var(--kart)}
+  .winner.paint{color:#9dffb6;text-shadow:3px 3px 0 var(--paint-2)}
+  .actions{display:flex;flex-wrap:wrap;gap:18px;justify-content:center;margin-top:6px}
+  .note{color:var(--muted);font-size:19px;max-width:38ch}
+  .confetti{position:fixed;inset:0;pointer-events:none;z-index:40;overflow:hidden}
+  .confetti i{position:absolute;top:-12px;width:8px;height:8px;animation:fall linear forwards}
+  @keyframes fall{to{transform:translateY(110vh) rotate(360deg)}}
+
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+  footer{margin-top:32px;color:#6f6797;font-size:16px}
+
+  /* ---------- Info-Fenster ---------- */
+  .overlay{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(10,6,24,.82)}
+  .overlay.open{display:flex}
+  .modal{width:100%;max-width:520px;max-height:88vh;overflow:auto;background:var(--bg2);text-align:left;padding:24px 20px 22px;
+    box-shadow:0 0 0 var(--px) #000,0 0 0 calc(var(--px)*2) var(--mframe,var(--kart-2)),0 0 0 calc(var(--px)*3) #000;animation:pop .3s steps(4) both}
+  .modal.kart{--mframe:var(--kart-2)}
+  .modal.paint{--mframe:var(--paint-2)}
+  .modal-head{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+  .modal-head svg{flex:none}
+  .modal-tag{font-family:"Press Start 2P";font-size:9px;color:var(--muted);margin-bottom:8px}
+  .modal h3{font-family:"Press Start 2P";font-size:clamp(13px,3.4vw,17px);line-height:1.5}
+  .modal.kart h3{color:var(--kart-2)}
+  .modal.paint h3{color:#9dffb6}
+  .modal-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .modal-tags span{font-size:18px;background:rgba(0,0,0,.35);padding:3px 10px;box-shadow:0 0 0 2px var(--mframe,var(--kart-2))}
+  .modal-text{display:grid;gap:10px;margin-bottom:16px;font-size:22px}
+  .modal-gift{
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+    background:rgba(0,0,0,.35);padding:12px 14px;margin-bottom:20px;font-size:22px;color:var(--ink);
+    border-left:6px solid var(--mframe,var(--kart-2));
+  }
+  .heart{font-family:"Press Start 2P";font-size:12px;color:var(--paint-2);animation:beat 1s steps(2) infinite}
+  @keyframes beat{50%{transform:scale(1.25)}}
+  .modal ul{list-style:none;display:grid;gap:8px;margin-bottom:20px}
+  .modal li{display:flex;gap:10px}
+  .modal li::before{content:"";flex:none;width:10px;height:10px;margin-top:8px;background:var(--mframe,var(--kart-2))}
+  .modal-actions{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center}
+
+  @media (max-width:620px){
+    .vs-wrap{grid-template-columns:1fr;gap:4px}
+    .vs{margin:2px 0}
+    .card{margin:12px 14px}
+    .btn{font-size:11px;padding:14px 16px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation:none!important;transition:none!important}
+    .confetti{display:none}
+  }
+</style>
+</head>
+<body>
+<main>
+
+  <!-- ====== 1. START ====== -->
+  <section class="screen active" id="s-start" aria-labelledby="t-start">
+    <div class="badge pixel">★ LEVEL UP ★</div>
+    <h1 class="pixel" id="t-start">HAPPY<br>BIRTHDAY!</h1>
+    <p class="sub" id="greeting">Ein neues Level wurde freigeschaltet. Dein Geschenk ist ein Abenteuer – und du entscheidest, welches.</p>
+    <button class="btn" id="btn-start"><span class="blink" aria-hidden="true">▶</span> PRESS START</button>
+  </section>
+
+  <!-- ====== 2. AUSWAHL ====== -->
+  <section class="screen" id="s-select" aria-labelledby="t-select">
+    <h2 class="pixel" id="t-select">WÄHLE DEIN<br>ABENTEUER</h2>
+    <p class="hint">Tippe auf eine Karte und bestätige deine Wahl.</p>
+
+    <div class="vs-wrap" role="radiogroup" aria-labelledby="t-select">
+      <button class="card kart" role="radio" aria-checked="false" data-choice="kart">
+        <span class="p1">P1</span>
+        <svg class="sprite" id="sp-kart" width="112" height="88" aria-hidden="true"></svg>
+        <span class="title">KART-RENNEN</span>
+        <span class="desc">Vollgas, enge Kurven und Sieg auf der Ziellinie.</span>
+        <span class="stats" aria-hidden="true">
+          <span class="bar"><span>Tempo</span><i data-v="5"></i></span>
+          <span class="bar"><span>Action</span><i data-v="4"></i></span>
+          <span class="bar"><span>Dreck</span><i data-v="1"></i></span>
+        </span>
+        <span class="checker" aria-hidden="true"></span>
+      </button>
+
+      <div class="vs" aria-hidden="true">VS</div>
+
+      <button class="card paint" role="radio" aria-checked="false" data-choice="paint">
+        <span class="p1">P1</span>
+        <span class="splat" style="--s:34px;--c:var(--paint-2);top:14px;right:18px" aria-hidden="true"></span>
+        <span class="splat" style="--s:22px;--c:#ffd23f;top:70px;left:16px" aria-hidden="true"></span>
+        <span class="splat" style="--s:26px;--c:#5ee6ff;bottom:26px;right:22px" aria-hidden="true"></span>
+        <svg class="sprite" id="sp-paint" width="112" height="88" aria-hidden="true"></svg>
+        <span class="title">PAINTBALL</span>
+        <span class="desc">Taktik, Teamgeist und jede Menge Farbe im Freien.</span>
+        <span class="stats" aria-hidden="true">
+          <span class="bar"><span>Tempo</span><i data-v="3"></i></span>
+          <span class="bar"><span>Action</span><i data-v="5"></i></span>
+          <span class="bar"><span>Dreck</span><i data-v="5"></i></span>
+        </span>
+      </button>
+    </div>
+
+    <button class="btn" id="btn-confirm" disabled>AUSWAHL BESTÄTIGEN</button>
+    <p class="sr-only" aria-live="polite" id="live"></p>
+  </section>
+
+  <!-- ====== 3. ERGEBNIS ====== -->
+  <section class="screen" id="s-result" aria-labelledby="t-result">
+    <h2 class="pixel" id="t-result">PLAYER 1<br>HAT GEWÄHLT</h2>
+    <div class="result-box">
+      <svg class="sprite" id="sp-result" width="140" height="110" aria-hidden="true"></svg>
+      <p class="winner pixel" id="winner"></p>
+      <p class="note" id="result-text"></p>
+    </div>
+    <div class="actions">
+      <a class="btn wa" id="btn-wa" target="_blank" rel="noopener">WAHL PER WHATSAPP</a>
+      <a class="btn mail" id="btn-mail">WAHL PER E-MAIL</a>
+    </div>
+    <button class="btn ghost" id="btn-back" style="margin-top:22px">Doch anders entscheiden</button>
+  </section>
+
+  <footer>© Dein Geburtstags-Team · Game Over? Niemals.</footer>
+</main>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="m-title" aria-describedby="m-intro">
+    <div class="modal-head">
+      <svg class="sprite" id="sp-modal" width="72" height="58" aria-hidden="true"></svg>
+      <div>
+        <p class="modal-tag">LEVEL-INFO</p>
+        <h3 id="m-title"></h3>
+      </div>
+    </div>
+    <div class="modal-tags" id="m-tags"></div>
+    <div class="modal-text" id="m-intro"></div>
+    <p class="modal-gift" id="m-gift"></p>
+    <div class="modal-actions">
+      <button class="btn ghost" id="m-back">Zurück</button>
+      <button class="btn" id="m-pick">DAS NEHME ICH</button>
+    </div>
+  </div>
+</div>
+
+<div class="confetti" id="confetti" aria-hidden="true"></div>
+
+<script>
+/* =========================================================
+   EINSTELLUNGEN
+   ========================================================= */
+const CONFIG = {
+  name: "",                       // Name des Geburtstagskinds, z. B. "Anna" – leer lassen für allgemeine Begrüßung
+  whatsapp: "4915753707144",      // Handynummer international ohne +; leer ("") = Kontakt/Gruppe frei wählen
+  email: "simon.grotter@t-online.de", // Empfänger für die E-Mail-Rückmeldung
+};
+
+/* ---------- Pixel-Sprites ---------- */
+const PAL = {R:"#e83b3b",D:"#8e1f2a",Y:"#ffd23f",K:"#111",W:"#fdf6e3",S:"#f2c29b",G:"#3fbf5f",H:"#1d5e33",C:"#5ee6ff",P:"#ff4fa3",B:"#6b4a2b",O:"#ff9f1c"};
+const KART = [
+  "......RRRR......",
+  ".....RRRRRR.....",
+  ".....RCCCCR.....",
+  ".....RSSSSR.....",
+  "......SSSS......",
+  "...YYYRRRRYYY...",
+  "..YRRRRRRRRRRY..",
+  ".YRRRRDDDDRRRRY.",
+  "YRRRRRRRRRRRRRRR",
+  "RRRRWWRRRRWWRRRR",
+  ".KKKK......KKKK.",
+  "KKWWKK....KKWWKK",
+  ".KKKK......KKKK.",
+];
+const PAINT = [
+  "......GGGG......",
+  "....GGGGGGGG....",
+  "...GGGGGGGGGG...",
+  "..GKKKKKKKKKKG..",
+  "..GKCCCKKCCCKG..",
+  "..GKCWCKKCWCKG..",
+  "..GKKKKKKKKKKG..",
+  "...GGKKKKKKGG...",
+  "...GGKHGGHKGG...",
+  "....GGKKKKGG....",
+  "..P..GGGGGG..O..",
+  ".PPP........OOO.",
+  "..P..........O..",
+];
+function drawSprite(svg, rows){
+  const w = rows[0].length, h = rows.length;
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("shape-rendering","crispEdges");
+  svg.innerHTML = "";
+  rows.forEach((row,y)=>[...row].forEach((ch,x)=>{
+    if(ch === ".") return;
+    const r = document.createElementNS("http://www.w3.org/2000/svg","rect");
+    r.setAttribute("x",x); r.setAttribute("y",y);
+    r.setAttribute("width",1); r.setAttribute("height",1);
+    r.setAttribute("fill",PAL[ch]);
+    svg.appendChild(r);
+  }));
+}
+drawSprite(document.getElementById("sp-kart"), KART);
+drawSprite(document.getElementById("sp-paint"), PAINT);
+
+/* ---------- Statusbalken ---------- */
+document.querySelectorAll(".bar i").forEach(el=>{
+  const v = +el.dataset.v;
+  el.innerHTML = Array.from({length:5},(_,i)=>`<b class="${i<v?'on':''}"></b>`).join("");
+});
+
+/* ---------- Begrüßung ---------- */
+if(CONFIG.name){
+  document.getElementById("t-start").innerHTML = `HAPPY<br>BIRTHDAY,<br>${CONFIG.name.toUpperCase()}!`;
+}
+
+/* ---------- Ablauf ---------- */
+const screens = {start:"s-start", select:"s-select", result:"s-result"};
+function show(key){
+  Object.values(screens).forEach(id=>document.getElementById(id).classList.remove("active"));
+  const el = document.getElementById(screens[key]);
+  el.classList.add("active");
+  const h = el.querySelector("h1,h2"); if(h){h.setAttribute("tabindex","-1"); h.focus({preventScroll:true});}
+  window.scrollTo({top:0});
+}
+
+const DATA = {
+  kart:{label:"KART-RENNEN!", cls:"kart", sprite:KART,
+        text:"Helm auf, Visier runter – bald heißt es: Ampel auf Grün und Vollgas!",
+        msg:"Ich habe gewählt: KART-RENNEN! 🏁 Helm auf und Vollgas!",
+        /* ===== INFO-FENSTER KART – Inhalt hier anpassen ===== */
+        info:{
+          title:"KART-RENNEN",
+          tags:["📍 Wackersdorf","🏠 + Besuch im Hause Sochor"],
+          text:[
+            "Wir besuchen die Prokart Raceland Go-Kart-Bahn in Wackersdorf.",
+            "Da dieses idyllische Fleckchen Erde nicht weit von Spuggis Heimatstädtchen gelegen ist, könnte man diesen Spaß mit einem Besuch im Hause Sochor verbinden."
+          ],
+          gift:"Deine Kosten für die Kartbahn übernehmen wir <3"
+        }},
+  paint:{label:"PAINTBALL!", cls:"paint", sprite:PAINT,
+        text:"Maske auf, Team zusammen – bald wird es bunt im Gelände!",
+        msg:"Ich habe gewählt: PAINTBALL! 🎨 Maske auf und los geht's!",
+        /* ===== INFO-FENSTER PAINTBALL – Inhalt hier anpassen ===== */
+        info:{
+          title:"PAINTBALL",
+          tags:["📍 Tschechien","🧳 Wochenendtrip"],
+          text:[
+            "Wir reisen nach Tschechien und gönnen uns ein wenig Action in einer Outdoor-Paintball-Arena.",
+            "Hier läuft der Spaß vermutlich eher auf einen Wochenendtrip hinaus."
+          ],
+          gift:"Deine Kosten für die Paintball-Action übernehmen wir <3"
+        }}
+};
+
+let choice = null;
+const cards = [...document.querySelectorAll(".card")];
+const confirmBtn = document.getElementById("btn-confirm");
+
+function select(c){
+  choice = c;
+  cards.forEach(card=>{
+    const on = card.dataset.choice === c;
+    card.setAttribute("aria-checked", on);
+    card.classList.toggle("dim", !on);
+    card.tabIndex = on ? 0 : -1;
+  });
+  confirmBtn.disabled = false;
+  document.getElementById("live").textContent = `${DATA[c].label} ausgewählt`;
+}
+/* ---------- Info-Fenster ---------- */
+const overlay = document.getElementById("overlay");
+const modal = document.getElementById("modal");
+let pending = null, lastFocus = null;
+function openInfo(c){
+  pending = c; lastFocus = document.activeElement;
+  const d = DATA[c];
+  modal.className = "modal " + d.cls;
+  drawSprite(document.getElementById("sp-modal"), d.sprite);
+  document.getElementById("m-title").textContent = d.info.title;
+  const tags = document.getElementById("m-tags"); tags.innerHTML = "";
+  d.info.tags.forEach(t=>{const sp=document.createElement("span"); sp.textContent=t; tags.appendChild(sp);});
+  const txt = document.getElementById("m-intro"); txt.innerHTML = "";
+  d.info.text.forEach(t=>{const pp=document.createElement("p"); pp.textContent=t; txt.appendChild(pp);});
+  const gift = document.getElementById("m-gift");
+  gift.innerHTML = "";
+  const gs=document.createElement("span"); gs.textContent = d.info.gift.replace(/\s*<3\s*$/,"");
+  gift.appendChild(gs);
+  if(/<3\s*$/.test(d.info.gift)){ const h=document.createElement("span"); h.className="heart"; h.setAttribute("aria-label","Herz"); h.textContent="<3"; gift.appendChild(h); }
+  overlay.classList.add("open");
+  document.getElementById("m-pick").focus();
+}
+function closeInfo(){ overlay.classList.remove("open"); if(lastFocus) lastFocus.focus(); }
+document.getElementById("m-pick").addEventListener("click",()=>{ select(pending); overlay.classList.remove("open"); confirmBtn.focus(); });
+document.getElementById("m-back").addEventListener("click",closeInfo);
+overlay.addEventListener("click",e=>{ if(e.target===overlay) closeInfo(); });
+document.addEventListener("keydown",e=>{
+  if(!overlay.classList.contains("open")) return;
+  if(e.key==="Escape"){ e.preventDefault(); closeInfo(); }
+  if(e.key==="Tab"){
+    const f=[...modal.querySelectorAll("button")], first=f[0], last=f[f.length-1];
+    if(e.shiftKey && document.activeElement===first){e.preventDefault(); last.focus();}
+    else if(!e.shiftKey && document.activeElement===last){e.preventDefault(); first.focus();}
+  }
+});
+cards.forEach((card,i)=>{
+  card.tabIndex = i===0 ? 0 : -1;
+  card.addEventListener("click",()=>openInfo(card.dataset.choice));
+  card.addEventListener("keydown",e=>{
+    if(["ArrowRight","ArrowDown","ArrowLeft","ArrowUp"].includes(e.key)){
+      e.preventDefault();
+      const next = cards[(i+1)%cards.length];
+      cards.forEach(c=>c.tabIndex=-1); next.tabIndex=0; next.focus();
+    }
+  });
+});
+
+document.getElementById("btn-start").addEventListener("click",()=>show("select"));
+document.getElementById("btn-back").addEventListener("click",()=>show("select"));
+
+confirmBtn.addEventListener("click",()=>{
+  if(!choice) return;
+  const d = DATA[choice];
+  drawSprite(document.getElementById("sp-result"), d.sprite);
+  const w = document.getElementById("winner");
+  w.textContent = d.label; w.className = "winner pixel " + d.cls;
+  document.getElementById("result-text").textContent = d.text;
+
+  const txt = encodeURIComponent(d.msg);
+  document.getElementById("btn-wa").href =
+    CONFIG.whatsapp ? `https://wa.me/${CONFIG.whatsapp}?text=${txt}` : `https://wa.me/?text=${txt}`;
+  document.getElementById("btn-mail").href =
+    `mailto:${CONFIG.email}?subject=${encodeURIComponent("Meine Geschenk-Wahl")}&body=${txt}`;
+
+  show("result");
+  confetti(choice);
+});
+
+function confetti(c){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const box = document.getElementById("confetti");
+  const colors = c==="kart" ? ["#e83b3b","#ffd23f","#fdf6e3","#111"] : ["#3fbf5f","#ff4fa3","#5ee6ff","#ffd23f"];
+  box.innerHTML = "";
+  for(let i=0;i<70;i++){
+    const p = document.createElement("i");
+    p.style.left = Math.random()*100+"vw";
+    p.style.background = colors[i%colors.length];
+    p.style.animationDuration = (1.6+Math.random()*1.8)+"s";
+    p.style.animationDelay = (Math.random()*0.6)+"s";
+    box.appendChild(p);
+  }
+  setTimeout(()=>box.innerHTML="",4200);
+}
+</script>
+</body>
+</html>
